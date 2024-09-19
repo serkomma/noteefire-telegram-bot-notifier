@@ -8,11 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,11 +31,17 @@ public class NotificationService {
             @RequestBody DispatcherNotificationEntity entityRcv){
         NotificationEntity entityBd = NotificationEntity.builder()
                 .dateTime(LocalDateTime.of(entityRcv.getDate(), entityRcv.getTime()))
-                .chatid(entityRcv.getChatId())
+                .chatid(entityRcv.getChatid())
                 .notification(entityRcv.getNotification())
                 .build();
         notificationRepository.save(entityBd);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(null);
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<?> getNotifications(
+            @RequestHeader long chatId){
+        return new ResponseEntity<>(notificationRepository.getAllByChatid(chatId), HttpStatus.OK);
     }
 
     @Scheduled(fixedRate = 1000)  //(cron = "1 * * * * *")                                // every second
@@ -53,7 +55,7 @@ public class NotificationService {
                         LocalTime.of(localTime.getHour(), localTime.getMinute(), localTime.getSecond()))).orElse(null);
         if (entityBd != null) {
             notificationProxy.send_notification(entityBd.getChatid(), DispatcherNotificationEntity.builder()
-                    .chatId(entityBd.getChatid())
+                    .chatid(entityBd.getChatid())
                     .notification(entityBd.getNotification())
                     .date(entityBd.getDateTime().toLocalDate())
                     .time(entityBd.getDateTime().toLocalTime())
